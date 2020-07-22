@@ -210,11 +210,11 @@ def exc_to_retry(etypes):
 @removals.remove(version='Ocata', removal_version='Pike',
                  message="Usage of legacy facade is deprecated. Use "
                          "get_reader_session or get_writer_session instead.")
-def get_session(autocommit=True, expire_on_commit=False, use_slave=False):
+def get_session(autocommit=True, expire_on_commit=False, use_subordinate=False):
     """Helper method to grab session."""
     return context_manager.get_legacy_facade().get_session(
         autocommit=autocommit, expire_on_commit=expire_on_commit,
-        use_slave=use_slave)
+        use_subordinate=use_subordinate)
 
 
 def get_reader_session():

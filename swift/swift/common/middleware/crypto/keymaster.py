@@ -26,7 +26,7 @@ from swift.common.utils import readconf
 from swift.common.wsgi import WSGIContext
 
 
-class KeyMasterContext(WSGIContext):
+class KeyMainContext(WSGIContext):
     """
     The simple scheme for key derivation is as follows: every path is
     associated with a key, where the key is derived from the path itself in a
@@ -36,15 +36,15 @@ class KeyMasterContext(WSGIContext):
 
       <path_key> = HMAC_SHA256(<root_secret>, <path>)
     """
-    def __init__(self, keymaster, account, container, obj):
+    def __init__(self, keymain, account, container, obj):
         """
-        :param keymaster: a Keymaster instance
+        :param keymain: a Keymain instance
         :param account: account name
         :param container: container name
         :param obj: object name
         """
-        super(KeyMasterContext, self).__init__(keymaster.app)
-        self.keymaster = keymaster
+        super(KeyMainContext, self).__init__(keymain.app)
+        self.keymain = keymain
         self.account = account
         self.container = container
         self.obj = obj
@@ -55,10 +55,10 @@ class KeyMasterContext(WSGIContext):
         Setup container and object keys based on the request path.
 
         Keys are derived from request path. The 'id' entry in the results dict
-        includes the part of the path used to derive keys. Other keymaster
+        includes the part of the path used to derive keys. Other keymain
         implementations may use a different strategy to generate keys and may
         include a different type of 'id', so callers should treat the 'id' as
-        opaque keymaster-specific data.
+        opaque keymain-specific data.
 
         :returns: A dict containing encryption keys for 'object' and
                   'container' and a key 'id'.
@@ -71,18 +71,18 @@ class KeyMasterContext(WSGIContext):
 
         if self.container:
             path = os.path.join(account_path, self.container)
-            self._keys['container'] = self.keymaster.create_key(path)
+            self._keys['container'] = self.keymain.create_key(path)
 
             if self.obj:
                 path = os.path.join(path, self.obj)
-                self._keys['object'] = self.keymaster.create_key(path)
+                self._keys['object'] = self.keymain.create_key(path)
 
-            # For future-proofing include a keymaster version number and the
+            # For future-proofing include a keymain version number and the
             # path used to derive keys in the 'id' entry of the results. The
             # encrypter will persist this as part of the crypto-meta for
             # encrypted data and metadata. If we ever change the way keys are
             # generated then the decrypter could pass the persisted 'id' value
-            # when it calls fetch_crypto_keys to inform the keymaster as to how
+            # when it calls fetch_crypto_keys to inform the keymain as to how
             # that particular data or metadata had its keys generated.
             # Currently we have no need to do that, so we are simply persisting
             # this information for future use.
@@ -98,7 +98,7 @@ class KeyMasterContext(WSGIContext):
         return resp
 
 
-class KeyMaster(object):
+class KeyMain(object):
     """Middleware for providing encryption keys.
 
     The middleware requires its ``encryption_root_secret`` option to be set.
@@ -114,12 +114,12 @@ class KeyMaster(object):
     def __init__(self, app, conf):
         self.app = app
 
-        keymaster_config_path = conf.get('keymaster_config_path')
-        if keymaster_config_path:
+        keymain_config_path = conf.get('keymain_config_path')
+        if keymain_config_path:
             if any(opt in conf for opt in ('encryption_root_secret',)):
-                raise ValueError('keymaster_config_path is set, but there '
+                raise ValueError('keymain_config_path is set, but there '
                                  'are other config options specified!')
-            conf = readconf(keymaster_config_path, 'keymaster')
+            conf = readconf(keymain_config_path, 'keymain')
 
         self.root_secret = conf.get('encryption_root_secret')
         try:
@@ -136,7 +136,7 @@ class KeyMaster(object):
             raise ValueError(
                 'encryption_root_secret option in %s must be a base64 '
                 'encoding of at least 32 raw bytes' % (
-                    keymaster_config_path or 'proxy-server.conf'))
+                    keymain_config_path or 'proxy-server.conf'))
 
     def __call__(self, env, start_response):
         req = Request(env)
@@ -148,7 +148,7 @@ class KeyMaster(object):
 
         if req.method in ('PUT', 'POST', 'GET', 'HEAD'):
             # handle only those request methods that may require keys
-            km_context = KeyMasterContext(self, *parts[1:])
+            km_context = KeyMainContext(self, *parts[1:])
             try:
                 return km_context.handle_request(req, start_response)
             except HTTPException as err_resp:
@@ -166,7 +166,7 @@ def filter_factory(global_conf, **local_conf):
     conf = global_conf.copy()
     conf.update(local_conf)
 
-    def keymaster_filter(app):
-        return KeyMaster(app, conf)
+    def keymain_filter(app):
+        return KeyMain(app, conf)
 
-    return keymaster_filter
+    return keymain_filter

@@ -29,7 +29,7 @@ LOG = logging.getLogger(__name__)
 
 KEEPALIVED_STATE_CHANGE_SERVER_BACKLOG = 4096
 
-TRANSLATION_MAP = {'master': constants.HA_ROUTER_STATE_ACTIVE,
+TRANSLATION_MAP = {'main': constants.HA_ROUTER_STATE_ACTIVE,
                    'backup': constants.HA_ROUTER_STATE_STANDBY,
                    'fault': constants.HA_ROUTER_STATE_STANDBY}
 
@@ -103,7 +103,7 @@ class AgentMixin(object):
         state_change_server.run()
 
     def _calculate_batch_duration(self):
-        # Slave becomes the master after not hearing from it 3 times
+        # Subordinate becomes the main after not hearing from it 3 times
         detection_time = self.conf.ha_vrrp_advert_int * 3
 
         # Keepalived takes a couple of seconds to configure the VIPs
@@ -133,7 +133,7 @@ class AgentMixin(object):
         # include any IPv6 subnet, enable the gateway interface to accept
         # Router Advts from upstream router for default route.
         ex_gw_port_id = ri.ex_gw_port and ri.ex_gw_port['id']
-        if state == 'master' and ex_gw_port_id:
+        if state == 'main' and ex_gw_port_id:
             interface_name = ri.get_external_device_name(ex_gw_port_id)
             if ri.router.get('distributed', False):
                 namespace = ri.ha_namespace
@@ -142,7 +142,7 @@ class AgentMixin(object):
             ri._enable_ra_on_gw(ri.ex_gw_port, namespace, interface_name)
 
     def _update_metadata_proxy(self, ri, router_id, state):
-        if state == 'master':
+        if state == 'main':
             LOG.debug('Spawning metadata proxy for router %s', router_id)
             self.metadata_driver.spawn_monitored_metadata_proxy(
                 self.process_monitor, ri.ns_name, self.conf.metadata_port,
@@ -153,9 +153,9 @@ class AgentMixin(object):
                 self.process_monitor, ri.router_id, self.conf)
 
     def _update_radvd_daemon(self, ri, state):
-        # Radvd has to be spawned only on the Master HA Router. If there are
+        # Radvd has to be spawned only on the Main HA Router. If there are
         # any state transitions, we enable/disable radvd accordingly.
-        if state == 'master':
+        if state == 'main':
             ri.enable_radvd()
         else:
             ri.disable_radvd()

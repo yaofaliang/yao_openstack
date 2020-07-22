@@ -320,7 +320,7 @@ class StorwizeSVCManagementSimulator(object):
             'wwpn',
             'primary',
             'consistgrp',
-            'master',
+            'main',
             'aux',
             'cluster',
             'linkbandwidthmbits',
@@ -1827,16 +1827,16 @@ port_speed!N/A
     # Replication related command
     # Create a remote copy
     def _cmd_mkrcrelationship(self, **kwargs):
-        master_vol = ''
+        main_vol = ''
         aux_vol = ''
         aux_cluster = ''
-        master_sys = self._system_list['storwize-svc-sim']
+        main_sys = self._system_list['storwize-svc-sim']
         aux_sys = self._system_list['aux-svc-sim']
 
-        if 'master' not in kwargs:
+        if 'main' not in kwargs:
             return self._errors['CMMVC5707E']
-        master_vol = kwargs['master'].strip('\'\"')
-        if master_vol not in self._volumes_list:
+        main_vol = kwargs['main'].strip('\'\"')
+        if main_vol not in self._volumes_list:
             return self._errors['CMMVC5754E']
 
         if 'aux' not in kwargs:
@@ -1851,21 +1851,21 @@ port_speed!N/A
         if aux_cluster != aux_sys['name']:
             return self._errors['CMMVC5754E']
 
-        if (self._volumes_list[master_vol]['capacity'] !=
+        if (self._volumes_list[main_vol]['capacity'] !=
                 self._volumes_list[aux_vol]['capacity']):
             return self._errors['CMMVC5754E']
         rcrel_info = {}
         rcrel_info['id'] = self._find_unused_id(self._rcrelationship_list)
         rcrel_info['name'] = 'rcrel' + rcrel_info['id']
-        rcrel_info['master_cluster_id'] = master_sys['id']
-        rcrel_info['master_cluster_name'] = master_sys['name']
-        rcrel_info['master_vdisk_id'] = self._volumes_list[master_vol]['id']
-        rcrel_info['master_vdisk_name'] = master_vol
+        rcrel_info['main_cluster_id'] = main_sys['id']
+        rcrel_info['main_cluster_name'] = main_sys['name']
+        rcrel_info['main_vdisk_id'] = self._volumes_list[main_vol]['id']
+        rcrel_info['main_vdisk_name'] = main_vol
         rcrel_info['aux_cluster_id'] = aux_sys['id']
         rcrel_info['aux_cluster_name'] = aux_sys['name']
         rcrel_info['aux_vdisk_id'] = self._volumes_list[aux_vol]['id']
         rcrel_info['aux_vdisk_name'] = aux_vol
-        rcrel_info['primary'] = 'master'
+        rcrel_info['primary'] = 'main'
         rcrel_info['consistency_group_id'] = ''
         rcrel_info['consistency_group_name'] = ''
         rcrel_info['state'] = 'inconsistent_stopped'
@@ -1877,14 +1877,14 @@ port_speed!N/A
         rcrel_info['copy_type'] = 'global' if 'global' in kwargs else 'metro'
         rcrel_info['cycling_mode'] = ''
         rcrel_info['cycle_period_seconds'] = '300'
-        rcrel_info['master_change_vdisk_id'] = ''
-        rcrel_info['master_change_vdisk_name'] = ''
+        rcrel_info['main_change_vdisk_id'] = ''
+        rcrel_info['main_change_vdisk_name'] = ''
         rcrel_info['aux_change_vdisk_id'] = ''
         rcrel_info['aux_change_vdisk_name'] = ''
 
         self._rcrelationship_list[rcrel_info['name']] = rcrel_info
-        self._volumes_list[master_vol]['RC_name'] = rcrel_info['name']
-        self._volumes_list[master_vol]['RC_id'] = rcrel_info['id']
+        self._volumes_list[main_vol]['RC_name'] = rcrel_info['name']
+        self._volumes_list[main_vol]['RC_id'] = rcrel_info['id']
         self._volumes_list[aux_vol]['RC_name'] = rcrel_info['name']
         self._volumes_list[aux_vol]['RC_id'] = rcrel_info['id']
         return('RC Relationship, id [' + rcrel_info['id'] +
@@ -1892,14 +1892,14 @@ port_speed!N/A
 
     def _cmd_lsrcrelationship(self, **kwargs):
         rows = []
-        rows.append(['id', 'name', 'master_cluster_id', 'master_cluster_name',
-                     'master_vdisk_id', 'master_vdisk_name', 'aux_cluster_id',
+        rows.append(['id', 'name', 'main_cluster_id', 'main_cluster_name',
+                     'main_vdisk_id', 'main_vdisk_name', 'aux_cluster_id',
                      'aux_cluster_name', 'aux_vdisk_id', 'aux_vdisk_name',
                      'consistency_group_id', 'primary',
                      'consistency_group_name', 'state', 'bg_copy_priority',
                      'progress', 'freeze_time', 'status', 'sync',
                      'copy_type', 'cycling_mode', 'cycle_period_seconds',
-                     'master_change_vdisk_id', 'master_change_vdisk_name',
+                     'main_change_vdisk_id', 'main_change_vdisk_name',
                      'aux_change_vdisk_id', 'aux_change_vdisk_name'])
 
         # Assume we always get a filtervalue argument
@@ -1917,9 +1917,9 @@ port_speed!N/A
                             break
                         curr_state = v['status']
 
-                rows.append([v['id'], v['name'], v['master_cluster_id'],
-                             v['master_cluster_name'], v['master_vdisk_id'],
-                             v['master_vdisk_name'], v['aux_cluster_id'],
+                rows.append([v['id'], v['name'], v['main_cluster_id'],
+                             v['main_cluster_name'], v['main_vdisk_id'],
+                             v['main_vdisk_name'], v['aux_cluster_id'],
                              v['aux_cluster_name'], v['aux_vdisk_id'],
                              v['aux_vdisk_name'], v['consistency_group_id'],
                              v['primary'], v['consistency_group_name'],
@@ -1927,8 +1927,8 @@ port_speed!N/A
                              v['freeze_time'], v['status'], v['sync'],
                              v['copy_type'], v['cycling_mode'],
                              v['cycle_period_seconds'],
-                             v['master_change_vdisk_id'],
-                             v['master_change_vdisk_name'],
+                             v['main_change_vdisk_id'],
+                             v['main_change_vdisk_name'],
                              v['aux_change_vdisk_id'],
                              v['aux_change_vdisk_name']])
 
@@ -2003,8 +2003,8 @@ port_speed!N/A
         function = 'delete_force' if force else 'delete'
         self._rc_state_transition(function, rcrel)
         if rcrel['state'] == 'end':
-            self._volumes_list[rcrel['master_vdisk_name']]['RC_name'] = ''
-            self._volumes_list[rcrel['master_vdisk_name']]['RC_id'] = ''
+            self._volumes_list[rcrel['main_vdisk_name']]['RC_name'] = ''
+            self._volumes_list[rcrel['main_vdisk_name']]['RC_id'] = ''
             self._volumes_list[rcrel['aux_vdisk_name']]['RC_name'] = ''
             self._volumes_list[rcrel['aux_vdisk_name']]['RC_id'] = ''
             del self._rcrelationship_list[id_num]
@@ -2033,10 +2033,10 @@ port_speed!N/A
 
     def _cmd_lspartnershipcandidate(self, **kwargs):
         rows = [None] * 4
-        master_sys = self._system_list['storwize-svc-sim']
+        main_sys = self._system_list['storwize-svc-sim']
         aux_sys = self._system_list['aux-svc-sim']
         rows[0] = ['id', 'configured', 'name']
-        rows[1] = [master_sys['id'], 'no', master_sys['name']]
+        rows[1] = [main_sys['id'], 'no', main_sys['name']]
         rows[2] = [aux_sys['id'], 'no', aux_sys['name']]
         rows[3] = ['0123456789001234', 'no', 'fake_svc']
         return self._print_info_cmd(rows=rows, **kwargs)
@@ -2046,11 +2046,11 @@ port_speed!N/A
         rows.append(['id', 'name', 'location', 'partnership',
                      'type', 'cluster_ip', 'event_log_sequence'])
 
-        master_sys = self._system_list['storwize-svc-sim']
-        if master_sys['name'] not in self._partnership_list:
+        main_sys = self._system_list['storwize-svc-sim']
+        if main_sys['name'] not in self._partnership_list:
             local_info = {}
-            local_info['id'] = master_sys['id']
-            local_info['name'] = master_sys['name']
+            local_info['id'] = main_sys['id']
+            local_info['name'] = main_sys['name']
             local_info['location'] = 'local'
             local_info['type'] = ''
             local_info['cluster_ip'] = ''
@@ -2059,7 +2059,7 @@ port_speed!N/A
             local_info['linkbandwidthmbits'] = ''
             local_info['backgroundcopyrate'] = ''
             local_info['partnership'] = ''
-            self._partnership_list[master_sys['id']] = local_info
+            self._partnership_list[main_sys['id']] = local_info
 
         # Assume we always get a filtervalue argument
         filter_key = kwargs['filtervalue'].split('=')[0]
@@ -2074,7 +2074,7 @@ port_speed!N/A
     def _cmd_mkippartnership(self, **kwargs):
         if 'clusterip' not in kwargs:
             return self._errors['CMMVC5707E']
-        clusterip = kwargs['master'].strip('\'\"')
+        clusterip = kwargs['main'].strip('\'\"')
 
         if 'linkbandwidthmbits' not in kwargs:
             return self._errors['CMMVC5707E']
@@ -4202,29 +4202,29 @@ class StorwizeSVCCommonDriverTestCase(test.TestCase):
 
     def test_storwize_svc_delete_volume_snapshots(self):
         # Create a volume with two snapshots
-        master = self._create_volume()
+        main = self._create_volume()
 
         # Fail creating a snapshot - will force delete the snapshot
         if self.USESIM and False:
-            snap = self._generate_vol_info(master['name'], master['id'])
+            snap = self._generate_vol_info(main['name'], main['id'])
             self.sim.error_injection('startfcmap', 'bad_id')
             self.assertRaises(exception.VolumeBackendAPIException,
                               self.driver.create_snapshot, snap)
             self._assert_vol_exists(snap['name'], False)
 
         # Delete a snapshot
-        snap = self._generate_vol_info(master['name'], master['id'])
+        snap = self._generate_vol_info(main['name'], main['id'])
         self.driver.create_snapshot(snap)
         self._assert_vol_exists(snap['name'], True)
         self.driver.delete_snapshot(snap)
         self._assert_vol_exists(snap['name'], False)
 
         # Delete a volume with snapshots (regular)
-        snap = self._generate_vol_info(master['name'], master['id'])
+        snap = self._generate_vol_info(main['name'], main['id'])
         self.driver.create_snapshot(snap)
         self._assert_vol_exists(snap['name'], True)
-        self.driver.delete_volume(master)
-        self._assert_vol_exists(master['name'], False)
+        self.driver.delete_volume(main)
+        self._assert_vol_exists(main['name'], False)
 
         # Fail create volume from snapshot - will force delete the volume
         if self.USESIM:
@@ -5979,7 +5979,7 @@ class StorwizeSVCReplicationTestCase(test.TestCase):
 
         self.driver._get_storwize_config()
         self.assertEqual(self.driver._helpers,
-                         self.driver._master_backend_helpers)
+                         self.driver._main_backend_helpers)
         self.assertEqual(self.driver._replica_enabled, False)
 
         self.driver._get_storwize_config()
@@ -6027,8 +6027,8 @@ class StorwizeSVCReplicationTestCase(test.TestCase):
         rep_type = self.driver._get_volume_replicated_type(self.ctxt, volume)
         self.assertEqual(vol_rep_type, rep_type)
 
-        self.assertEqual(rel_info['primary'], 'master')
-        self.assertEqual(rel_info['master_vdisk_name'], volume['name'])
+        self.assertEqual(rel_info['primary'], 'main')
+        self.assertEqual(rel_info['main_vdisk_name'], volume['name'])
         self.assertEqual(
             rel_info['aux_vdisk_name'],
             storwize_const.REPLICA_AUX_VOL_PREFIX + volume['name'])
@@ -6209,7 +6209,7 @@ class StorwizeSVCReplicationTestCase(test.TestCase):
         rep_volume, model_update = self._create_test_volume(self.mm_type)
         self.assertEqual('enabled', model_update['replication_status'])
 
-        uid_of_master = self._get_vdisk_uid(rep_volume['name'])
+        uid_of_main = self._get_vdisk_uid(rep_volume['name'])
         uid_of_aux = self._get_vdisk_uid(
             storwize_const.REPLICA_AUX_VOL_PREFIX + rep_volume['name'])
 
@@ -6220,10 +6220,10 @@ class StorwizeSVCReplicationTestCase(test.TestCase):
         self.driver.manage_existing(new_volume, ref)
 
         # Check the uid of the volume which has been renamed.
-        uid_of_master_volume = self._get_vdisk_uid(new_volume['name'])
+        uid_of_main_volume = self._get_vdisk_uid(new_volume['name'])
         uid_of_aux_volume = self._get_vdisk_uid(
             storwize_const.REPLICA_AUX_VOL_PREFIX + new_volume['name'])
-        self.assertEqual(uid_of_master, uid_of_master_volume)
+        self.assertEqual(uid_of_main, uid_of_main_volume)
         self.assertEqual(uid_of_aux, uid_of_aux_volume)
 
         self.driver.delete_volume(rep_volume)
@@ -6697,13 +6697,13 @@ class StorwizeSVCReplicationTestCase(test.TestCase):
 
         volumes = [mm_vol]
         fake_info = {'volume': 'fake',
-                     'master_vdisk_name': 'fake',
+                     'main_vdisk_name': 'fake',
                      'aux_vdisk_name': 'fake'}
         sync_state = {'state': storwize_const.REP_CONSIS_SYNC,
                       'primary': 'fake'}
         sync_state.update(fake_info)
         disconn_state = {'state': storwize_const.REP_IDL_DISC,
-                         'primary': 'master'}
+                         'primary': 'main'}
         disconn_state.update(fake_info)
         stop_state = {'state': storwize_const.REP_CONSIS_STOP,
                       'primary': 'aux'}
@@ -6743,7 +6743,7 @@ class StorwizeSVCReplicationTestCase(test.TestCase):
         # Create metro mirror replication.
         mm_vol = self._generate_vol_info(None, None, self.mm_type)
         fake_info = {'volume': 'fake',
-                     'master_vdisk_name': 'fake',
+                     'main_vdisk_name': 'fake',
                      'aux_vdisk_name': 'fake',
                      'primary': 'fake'}
         sync_state = {'state': storwize_const.REP_CONSIS_SYNC}

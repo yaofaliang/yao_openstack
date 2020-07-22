@@ -155,7 +155,7 @@ class CryptoWSGIContext(WSGIContext):
         self.server_type = server_type
 
     def get_keys(self, env, required=None):
-        # Get the key(s) from the keymaster
+        # Get the key(s) from the keymain
         required = required if required is not None else [self.server_type]
         try:
             fetch_crypto_keys = env[CRYPTO_KEY_CALLBACK]

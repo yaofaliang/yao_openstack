@@ -17,7 +17,7 @@
 # select.poll [1]. Because of kafka-python.selectors34 selects
 # PollSelector instead of SelectSelector [2]. PollSelector relies on
 # select.poll, which does not work when eventlet/greenlet is used. This
-# bug in evenlet is fixed in the master branch [3], but there's no
+# bug in evenlet is fixed in the main branch [3], but there's no
 # release of eventlet that includes this fix at this point.
 
 import json

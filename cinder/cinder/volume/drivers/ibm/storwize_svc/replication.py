@@ -216,7 +216,7 @@ class StorwizeSVCReplicationGlobalMirror(
 
     Global Mirror establishes a Global Mirror relationship between
     two volumes of equal size. The volumes in a Global Mirror relationship
-    are referred to as the master (source) volume and the auxiliary
+    are referred to as the main (source) volume and the auxiliary
     (target) volume. This mode is dedicated to the asynchronous volume
     replication.
     """
@@ -297,7 +297,7 @@ class StorwizeSVCReplicationGlobalMirror(
                         'status': 'available'}
             except Exception as e:
                 msg = (_('Unable to fail-back the volume:%(vol)s to the '
-                         'master back-end, error:%(error)s') %
+                         'main back-end, error:%(error)s') %
                        {"vol": volume['name'], "error": e})
                 LOG.exception(msg)
                 raise exception.VolumeDriverException(message=msg)
@@ -309,7 +309,7 @@ class StorwizeSVCReplicationMetroMirror(
 
     Metro Mirror establishes a Metro Mirror relationship between
     two volumes of equal size. The volumes in a Metro Mirror relationship
-    are referred to as the master (source) volume and the auxiliary
+    are referred to as the main (source) volume and the auxiliary
     (target) volume.
     """
 
@@ -327,7 +327,7 @@ class StorwizeSVCReplicationManager(object):
         self.driver = driver
         self.target = replication_target
         self.target_helpers = target_helpers(self._run_ssh)
-        self._master_helpers = self.driver._master_backend_helpers
+        self._main_helpers = self.driver._main_backend_helpers
         self.global_m = StorwizeSVCReplicationGlobalMirror(
             self.driver, replication_target, self.target_helpers)
         self.metro_m = StorwizeSVCReplicationMetroMirror(
@@ -408,7 +408,7 @@ class StorwizeSVCReplicationManager(object):
             raise exception.VolumeDriverException(message=msg)
 
     def establish_target_partnership(self):
-        local_system_info = self._master_helpers.get_system_info()
+        local_system_info = self._main_helpers.get_system_info()
         target_system_info = self.target_helpers.get_system_info()
         local_system_name = local_system_info['system_name']
         target_system_name = target_system_info['system_name']
@@ -417,7 +417,7 @@ class StorwizeSVCReplicationManager(object):
         # Establish partnership only when the local system and the replication
         # target system is different.
         if target_system_name != local_system_name:
-            self._partnership_validate_create(self._master_helpers,
+            self._partnership_validate_create(self._main_helpers,
                                               target_system_name, target_ip)
             self._partnership_validate_create(self.target_helpers,
                                               local_system_name, local_ip)

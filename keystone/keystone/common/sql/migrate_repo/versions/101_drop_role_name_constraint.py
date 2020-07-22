@@ -33,7 +33,7 @@ def upgrade(migrate_engine):
     # someone manually fixed the migrations / db without dropping the
     # old constraint.
     # This is a copy of migration 96 to catch any/all deployments that
-    # are close to master. migration 96 will be backported to
+    # are close to main. migration 96 will be backported to
     # stable/mitaka.
     to_drop = None
     if migrate_engine.name == 'mysql':

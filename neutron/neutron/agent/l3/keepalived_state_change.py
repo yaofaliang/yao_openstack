@@ -73,7 +73,7 @@ class MonitorDaemon(daemon.Daemon):
         try:
             event = ip_monitor.IPMonitorEvent.from_text(iterable)
             if event.interface == self.interface and event.cidr == self.cidr:
-                new_state = 'master' if event.added else 'backup'
+                new_state = 'main' if event.added else 'backup'
                 self.write_state_change(new_state)
                 self.notify_agent(new_state)
             elif event.interface != self.interface and event.added:

@@ -1083,7 +1083,7 @@ class TestAuditor(unittest.TestCase):
             check_kwargs = {}
             check_device_dir = None
             fork_called = 0
-            master = 0
+            main = 0
             wait_called = 0
 
             def mock_run(self, *args, **kwargs):
@@ -1104,7 +1104,7 @@ class TestAuditor(unittest.TestCase):
 
             def mock_fork(self):
                 self.fork_called += 1
-                if self.master:
+                if self.main:
                     return self.fork_called
                 else:
                     return 0
@@ -1163,7 +1163,7 @@ class TestAuditor(unittest.TestCase):
             self.assertEqual(mocker.check_kwargs['zero_byte_fps'], 89)
             self.assertEqual(sorted(mocker.check_device_dir), device_list)
 
-            mocker.master = 1
+            mocker.main = 1
 
             mocker.fork_called = 0
             self.assertRaises(StopForever, my_auditor.run_forever)

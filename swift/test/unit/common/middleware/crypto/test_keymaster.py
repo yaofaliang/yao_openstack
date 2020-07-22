@@ -20,7 +20,7 @@ import unittest
 
 from getpass import getuser
 from swift.common import swob
-from swift.common.middleware.crypto import keymaster
+from swift.common.middleware.crypto import keymain
 from swift.common.middleware.crypto.crypto_utils import CRYPTO_KEY_CALLBACK
 from swift.common.swob import Request
 from test.unit.common.middleware.helpers import FakeSwift, FakeAppThatExcepts
@@ -37,12 +37,12 @@ def capture_start_response():
     return start_response, calls
 
 
-class TestKeymaster(unittest.TestCase):
+class TestKeymain(unittest.TestCase):
 
     def setUp(self):
-        super(TestKeymaster, self).setUp()
+        super(TestKeymain, self).setUp()
         self.swift = FakeSwift()
-        self.app = keymaster.KeyMaster(self.swift, TEST_KEYMASTER_CONF)
+        self.app = keymain.KeyMain(self.swift, TEST_KEYMASTER_CONF)
 
     def test_object_path(self):
         self.verify_keys_for_path(
@@ -114,12 +114,12 @@ class TestKeymaster(unittest.TestCase):
                              (ref_path_parts, ref_keys, path_parts, keys))
 
     def test_filter(self):
-        factory = keymaster.filter_factory(TEST_KEYMASTER_CONF)
+        factory = keymain.filter_factory(TEST_KEYMASTER_CONF)
         self.assertTrue(callable(factory))
         self.assertTrue(callable(factory(self.swift)))
 
     def test_app_exception(self):
-        app = keymaster.KeyMaster(
+        app = keymain.KeyMain(
             FakeAppThatExcepts(), TEST_KEYMASTER_CONF)
         req = Request.blank('/', environ={'REQUEST_METHOD': 'PUT'})
         start_response, _ = capture_start_response()
@@ -129,9 +129,9 @@ class TestKeymaster(unittest.TestCase):
         sample_conf = "[default]\nuser = %s\n" % getuser()
         with tmpfile(sample_conf) as conf_file:
             self.assertRaisesRegexp(
-                ValueError, 'Unable to find keymaster config section in.*',
-                keymaster.KeyMaster, self.swift, {
-                    'keymaster_config_path': conf_file})
+                ValueError, 'Unable to find keymain config section in.*',
+                keymain.KeyMain, self.swift, {
+                    'keymain_config_path': conf_file})
 
     def test_root_secret(self):
         for secret in (os.urandom(32), os.urandom(33), os.urandom(50)):
@@ -139,15 +139,15 @@ class TestKeymaster(unittest.TestCase):
             for conf_val in (bytes(encoded_secret), unicode(encoded_secret),
                              encoded_secret[:30] + '\n' + encoded_secret[30:]):
                 try:
-                    app = keymaster.KeyMaster(
+                    app = keymain.KeyMain(
                         self.swift, {'encryption_root_secret': conf_val,
                                      'encryption_root_secret_path': ''})
                     self.assertEqual(secret, app.root_secret)
                 except AssertionError as err:
                     self.fail(str(err) + ' for secret %r' % conf_val)
 
-    @mock.patch('swift.common.middleware.crypto.keymaster.readconf')
-    def test_keymaster_config_path(self, mock_readconf):
+    @mock.patch('swift.common.middleware.crypto.keymain.readconf')
+    def test_keymain_config_path(self, mock_readconf):
         for secret in (os.urandom(32), os.urandom(33), os.urandom(50)):
             enc_secret = base64.b64encode(secret)
             for conf_val in (bytes(enc_secret), unicode(enc_secret),
@@ -159,12 +159,12 @@ class TestKeymaster(unittest.TestCase):
                     mock_readconf.return_value = {
                         'encryption_root_secret': conf_val}
 
-                    app = keymaster.KeyMaster(self.swift, {
-                        'keymaster_config_path': '/some/path'})
+                    app = keymain.KeyMain(self.swift, {
+                        'keymain_config_path': '/some/path'})
                     try:
                         self.assertEqual(secret, app.root_secret)
                         self.assertEqual(mock_readconf.mock_calls, [
-                            mock.call('/some/path', 'keymaster')])
+                            mock.call('/some/path', 'keymain')])
                     except AssertionError as err:
                         self.fail(str(err) + ' for secret %r' % secret)
 
@@ -177,7 +177,7 @@ class TestKeymaster(unittest.TestCase):
             conf = {'encryption_root_secret': secret}
             try:
                 with self.assertRaises(ValueError) as err:
-                    keymaster.KeyMaster(self.swift, conf)
+                    keymain.KeyMain(self.swift, conf)
                 self.assertEqual(
                     'encryption_root_secret option in proxy-server.conf '
                     'must be a base64 encoding of at least 32 raw bytes',
@@ -185,7 +185,7 @@ class TestKeymaster(unittest.TestCase):
             except AssertionError as err:
                 self.fail(str(err) + ' for conf %s' % str(conf))
 
-    @mock.patch('swift.common.middleware.crypto.keymaster.readconf')
+    @mock.patch('swift.common.middleware.crypto.keymain.readconf')
     def test_root_secret_path_invalid_secret(self, mock_readconf):
         for secret in (bytes(base64.b64encode(os.urandom(31))),  # too short
                        unicode(base64.b64encode(os.urandom(31))),
@@ -197,23 +197,23 @@ class TestKeymaster(unittest.TestCase):
 
             try:
                 with self.assertRaises(ValueError) as err:
-                    keymaster.KeyMaster(self.swift, {
-                        'keymaster_config_path': '/some/other/path'})
+                    keymain.KeyMain(self.swift, {
+                        'keymain_config_path': '/some/other/path'})
                 self.assertEqual(
                     'encryption_root_secret option in /some/other/path '
                     'must be a base64 encoding of at least 32 raw bytes',
                     err.exception.message)
                 self.assertEqual(mock_readconf.mock_calls, [
-                    mock.call('/some/other/path', 'keymaster')])
+                    mock.call('/some/other/path', 'keymain')])
             except AssertionError as err:
                 self.fail(str(err) + ' for secret %r' % secret)
 
     def test_can_only_configure_secret_in_one_place(self):
         conf = {'encryption_root_secret': 'a' * 44,
-                'keymaster_config_path': '/ets/swift/keymaster.conf'}
+                'keymain_config_path': '/ets/swift/keymain.conf'}
         with self.assertRaises(ValueError) as err:
-            keymaster.KeyMaster(self.swift, conf)
-        self.assertEqual('keymaster_config_path is set, but there are '
+            keymain.KeyMain(self.swift, conf)
+        self.assertEqual('keymain_config_path is set, but there are '
                          'other config options specified!',
                          err.exception.message)
 

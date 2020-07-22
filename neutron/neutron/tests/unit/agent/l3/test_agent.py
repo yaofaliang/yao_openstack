@@ -198,7 +198,7 @@ class TestBasicRouterOperations(BasicRouterOperationsFramework):
         non_existent_router = 42
 
         # Make sure the exceptional code path has coverage
-        agent.enqueue_state_change(non_existent_router, 'master')
+        agent.enqueue_state_change(non_existent_router, 'main')
 
     def test_enqueue_state_change_metadata_disable(self):
         self.conf.set_override('enable_metadata_proxy', False)
@@ -207,21 +207,21 @@ class TestBasicRouterOperations(BasicRouterOperationsFramework):
         router_info = mock.MagicMock()
         agent.router_info[router.id] = router_info
         agent._update_metadata_proxy = mock.Mock()
-        agent.enqueue_state_change(router.id, 'master')
+        agent.enqueue_state_change(router.id, 'main')
         self.assertFalse(agent._update_metadata_proxy.call_count)
 
-    def test_check_ha_state_for_router_master_standby(self):
+    def test_check_ha_state_for_router_main_standby(self):
         agent = l3_agent.L3NATAgent(HOSTNAME, self.conf)
         router = mock.Mock()
         router.id = '1234'
         router_info = mock.MagicMock()
         agent.router_info[router.id] = router_info
-        router_info.ha_state = 'master'
+        router_info.ha_state = 'main'
         with mock.patch.object(agent.state_change_notifier,
                                'queue_event') as queue_event:
             agent.check_ha_state_for_router(router.id,
                                             n_const.HA_ROUTER_STATE_STANDBY)
-            queue_event.assert_called_once_with((router.id, 'master'))
+            queue_event.assert_called_once_with((router.id, 'main'))
 
     def test_check_ha_state_for_router_standby_standby(self):
         agent = l3_agent.L3NATAgent(HOSTNAME, self.conf)

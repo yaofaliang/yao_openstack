@@ -36,7 +36,7 @@ def upgrade(migrate_engine):
     # consistently and someone manually fixed the migrations / db
     # without dropping the old constraint.
     # This is a copy of migration 97 to catch any/all deployments that
-    # are close to master. migration 97 will be backported to
+    # are close to main. migration 97 will be backported to
     # stable/mitaka.
 
     to_drop = None
