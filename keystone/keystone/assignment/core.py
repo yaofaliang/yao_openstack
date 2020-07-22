@@ -1075,7 +1075,7 @@ class RoleManager(manager.Manager):
         """Append a domain_id field to a role dict if it is not already there.
 
         When caching is turned on, upgrading from liberty to
-        mitaka or master causes tokens to fail to be issued for the
+        mitaka or main causes tokens to fail to be issued for the
         time-to-live of the cache. This is because as part of the token
         issuance the token's role is looked up, and the cached version of the
         role immediately after upgrade does not have a domain_id field, even

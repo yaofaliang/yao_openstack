@@ -387,66 +387,66 @@ class MatchmakerSentinel(MatchmakerRedisBase):
     def __init__(self, conf, *args, **kwargs):
         super(MatchmakerSentinel, self).__init__(conf, *args, **kwargs)
         socket_timeout = self.conf.matchmaker_redis.socket_timeout / 1000.
-        self._sentinel_hosts, self._password, self._master_group = \
+        self._sentinel_hosts, self._password, self._main_group = \
             self._extract_sentinel_hosts()
         self._sentinel = redis_sentinel.Sentinel(
             sentinels=self._sentinel_hosts,
             socket_timeout=socket_timeout,
             password=self._password)
-        self._slave = self._master = None
+        self._subordinate = self._main = None
 
     @property
-    def _redis_master(self):
+    def _redis_main(self):
         try:
-            if not self._master:
-                self._master = self._sentinel.master_for(self._master_group)
-            return self._master
-        except redis_sentinel.MasterNotFoundError:
+            if not self._main:
+                self._main = self._sentinel.main_for(self._main_group)
+            return self._main
+        except redis_sentinel.MainNotFoundError:
             raise zmq_matchmaker_base.MatchmakerUnavailable()
 
     @property
-    def _redis_slave(self):
+    def _redis_subordinate(self):
         try:
-            if not self._slave:
-                self._slave = self._sentinel.slave_for(self._master_group)
-        except redis_sentinel.SlaveNotFoundError:
-            # use the master as slave (temporary)
-            return self._redis_master
-        return self._slave
+            if not self._subordinate:
+                self._subordinate = self._sentinel.subordinate_for(self._main_group)
+        except redis_sentinel.SubordinateNotFoundError:
+            # use the main as subordinate (temporary)
+            return self._redis_main
+        return self._subordinate
 
     def _extract_sentinel_hosts(self):
 
         sentinels = []
-        master_group = self.conf.matchmaker_redis.sentinel_group_name
-        master_password = None
+        main_group = self.conf.matchmaker_redis.sentinel_group_name
+        main_password = None
 
         if self.url and self.url.hosts:
             for host in self.url.hosts:
                 target = host.hostname, host.port
                 if host.password:
-                    master_password = host.password
+                    main_password = host.password
                 sentinels.append(target)
             if self.url.virtual_host:
-                # url://:pass@sentinel_a,:pass@sentinel_b/master_group_name
-                master_group = self.url.virtual_host
+                # url://:pass@sentinel_a,:pass@sentinel_b/main_group_name
+                main_group = self.url.virtual_host
         elif self.conf.matchmaker_redis.sentinel_hosts:
             s = self.conf.matchmaker_redis.sentinel_hosts
             sentinels.extend([tuple(target.split(":")) for target in s])
-            master_password = self.conf.matchmaker_redis.password
+            main_password = self.conf.matchmaker_redis.password
 
-        return sentinels, master_password, master_group
+        return sentinels, main_password, main_group
 
     def _sadd(self, key, value, expire):
-        self._redis_master.sadd(key, value)
+        self._redis_main.sadd(key, value)
         if expire > 0:
-            self._redis_master.expire(key, expire)
+            self._redis_main.expire(key, expire)
 
     def _srem(self, key, value):
-        self._redis_master.srem(key, value)
+        self._redis_main.srem(key, value)
 
     def _smembers(self, key):
-        hosts = self._redis_slave.smembers(key)
+        hosts = self._redis_subordinate.smembers(key)
         return [host for host in hosts if self._ttl(host) >= -1]
 
     def _ttl(self, key):
-        return self._redis_slave.ttl(key)
+        return self._redis_subordinate.ttl(key)

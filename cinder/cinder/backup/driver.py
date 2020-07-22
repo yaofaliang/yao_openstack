@@ -151,7 +151,7 @@ class BackupMetadataAPI(base.Base):
 
         If fields is empty list, the full set is returned.
 
-        :param metadata: master set of metadata
+        :param metadata: main set of metadata
         :param fields: list of fields we want to extract
         :param excludes: fields to be exluded
         :returns: filtered metadata

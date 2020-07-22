@@ -162,7 +162,7 @@ class KeepalivedInstance(object):
     def __init__(self, state, interface, vrouter_id, ha_cidrs,
                  priority=HA_DEFAULT_PRIORITY, advert_int=None,
                  mcast_src_ip=None, nopreempt=False,
-                 garp_master_delay=GARP_MASTER_DELAY,
+                 garp_main_delay=GARP_MASTER_DELAY,
                  vrrp_health_check_interval=0,
                  ha_conf_dir=None):
         self.name = 'VR_%s' % vrouter_id
@@ -177,7 +177,7 @@ class KeepalivedInstance(object):
         self.nopreempt = nopreempt
         self.advert_int = advert_int
         self.mcast_src_ip = mcast_src_ip
-        self.garp_master_delay = garp_master_delay
+        self.garp_main_delay = garp_main_delay
         self.track_interfaces = []
         self.vips = []
         self.virtual_routes = KeepalivedInstanceRoutes()
@@ -288,7 +288,7 @@ class KeepalivedInstance(object):
                        '    interface %s' % self.interface,
                        '    virtual_router_id %s' % self.vrouter_id,
                        '    priority %s' % self.priority,
-                       '    garp_master_delay %s' % self.garp_master_delay])
+                       '    garp_main_delay %s' % self.garp_main_delay])
 
         if self.nopreempt:
             config.append('    nopreempt')

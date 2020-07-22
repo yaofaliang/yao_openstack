@@ -588,8 +588,8 @@ class XIVProxy(proxy.IBMStorageProxy):
                 resource_name=volume['name'],
                 target_name=target,
                 mirror_type=replication_info['mode'],
-                slave_resource_name=volume['name'],
-                create_slave='yes',
+                subordinate_resource_name=volume['name'],
+                create_subordinate='yes',
                 remote_pool=pool,
                 rpo=replication_info['rpo'],
                 schedule=schedule,
@@ -1138,43 +1138,43 @@ class XIVProxy(proxy.IBMStorageProxy):
         return ((self.active_backend_id is None) or
                 (self.active_backend_id == strings.PRIMARY_BACKEND_ID))
 
-    def _is_vol_split_brain(self, xcli_master, xcli_slave, vol):
-        mirror_master = xcli_master.cmd.mirror_list(vol=vol).as_list
-        mirror_slave = xcli_slave.cmd.mirror_list(vol=vol).as_list
-        if (len(mirror_master) == 1 and len(mirror_slave) == 1 and
-            mirror_master[0].current_role == 'Master' and
-            mirror_slave[0].current_role == 'Slave' and
-                mirror_master[0].sync_state.lower() in SYNCHED_STATES):
+    def _is_vol_split_brain(self, xcli_main, xcli_subordinate, vol):
+        mirror_main = xcli_main.cmd.mirror_list(vol=vol).as_list
+        mirror_subordinate = xcli_subordinate.cmd.mirror_list(vol=vol).as_list
+        if (len(mirror_main) == 1 and len(mirror_subordinate) == 1 and
+            mirror_main[0].current_role == 'Main' and
+            mirror_subordinate[0].current_role == 'Subordinate' and
+                mirror_main[0].sync_state.lower() in SYNCHED_STATES):
             return False
         else:
             return True
 
-    def _potential_split_brain(self, xcli_master, xcli_slave,
-                               volumes, pool_master, pool_slave):
+    def _potential_split_brain(self, xcli_main, xcli_subordinate,
+                               volumes, pool_main, pool_subordinate):
         potential_split_brain = []
-        if xcli_master is None or xcli_slave is None:
+        if xcli_main is None or xcli_subordinate is None:
             return potential_split_brain
         try:
-            vols_master = xcli_master.cmd.vol_list(
-                pool=pool_master).as_dict('name')
+            vols_main = xcli_main.cmd.vol_list(
+                pool=pool_main).as_dict('name')
         except Exception:
             msg = "Failed getting information from the active storage."
             LOG.debug(msg)
             return potential_split_brain
         try:
-            vols_slave = xcli_slave.cmd.vol_list(
-                pool=pool_slave).as_dict('name')
+            vols_subordinate = xcli_subordinate.cmd.vol_list(
+                pool=pool_subordinate).as_dict('name')
         except Exception:
             msg = "Failed getting information from the target storage."
             LOG.debug(msg)
             return potential_split_brain
 
         vols_requested = set(vol['name'] for vol in volumes)
-        common_vols = set(vols_master).intersection(
-            set(vols_slave)).intersection(set(vols_requested))
+        common_vols = set(vols_main).intersection(
+            set(vols_subordinate)).intersection(set(vols_requested))
         for name in common_vols:
-            if self._is_vol_split_brain(xcli_master=xcli_master,
-                                        xcli_slave=xcli_slave, vol=name):
+            if self._is_vol_split_brain(xcli_main=xcli_main,
+                                        xcli_subordinate=xcli_subordinate, vol=name):
                 potential_split_brain.append(name)
         return potential_split_brain
 
@@ -1185,8 +1185,8 @@ class XIVProxy(proxy.IBMStorageProxy):
 
         Attempts to failover a single volume
         Sequence:
-        1. attempt to switch roles from master
-        2. attempt to change role to master on slave
+        1. attempt to switch roles from main
+        2. attempt to change role to main on subordinate
 
         returns (success, failure_reason)
         """
@@ -1216,7 +1216,7 @@ class XIVProxy(proxy.IBMStorageProxy):
             volume_replication_mgr.switch_roles(resource_id=volume['name'])
             return True, None
         except Exception as e:
-            # failed attempt to switch_roles from the master
+            # failed attempt to switch_roles from the main
             details = self._get_code_and_status_or_message(e)
             LOG.warning(_LW('Failed to perform switch_roles on'
                             ' %(vol)s: %(err)s. '
@@ -1225,7 +1225,7 @@ class XIVProxy(proxy.IBMStorageProxy):
 
         try:
             # this is the ugly stage we come to brute force
-            LOG.warning(_LW('Attempt to change_role to master'))
+            LOG.warning(_LW('Attempt to change_role to main'))
             failover_volume_replication_mgr.failover_by_id(
                 resource_id=volume['name'])
             return True, None
@@ -1267,8 +1267,8 @@ class XIVProxy(proxy.IBMStorageProxy):
                           "to fail back again.")
                 LOG.info(msg)
                 return self.active_backend_id, volume_update_list
-            pool_slave = self.storage_info[storage.FLAG_KEYS['storage_pool']]
-            pool_master = self._get_target_params(
+            pool_subordinate = self.storage_info[storage.FLAG_KEYS['storage_pool']]
+            pool_main = self._get_target_params(
                 self.active_backend_id)['san_clustername']
             goal_status = 'available'
         else:
@@ -1285,23 +1285,23 @@ class XIVProxy(proxy.IBMStorageProxy):
                 LOG.error(msg)
                 raise self.meta['exception'].VolumeBackendAPIException(
                     data=msg)
-            pool_master = self.storage_info[storage.FLAG_KEYS['storage_pool']]
+            pool_main = self.storage_info[storage.FLAG_KEYS['storage_pool']]
             try:
-                pool_slave = self._get_target_params(
+                pool_subordinate = self._get_target_params(
                     secondary_id)['san_clustername']
             except Exception:
                 msg = _("Invalid target information. Can't perform failover")
                 LOG.error(msg)
                 raise self.meta['exception'].VolumeBackendAPIException(
                     data=msg)
-            pool_master = self.storage_info[storage.FLAG_KEYS['storage_pool']]
+            pool_main = self.storage_info[storage.FLAG_KEYS['storage_pool']]
             goal_status = objects.fields.ReplicationStatus.FAILED_OVER
 
         # connnect xcli to secondary storage according to backend_id by
         #  calling _init_xcli with secondary_id
         self.ibm_storage_remote_cli = self._init_xcli(secondary_id)
 
-        # Create volume manager for both master and remote
+        # Create volume manager for both main and remote
         volume_replication_mgr = volume_recovery_manager.VolumeRecoveryManager(
             False, self.ibm_storage_cli)
         failover_volume_replication_mgr = (
@@ -1316,8 +1316,8 @@ class XIVProxy(proxy.IBMStorageProxy):
             split_brain = self._potential_split_brain(
                 self.ibm_storage_cli,
                 self.ibm_storage_remote_cli,
-                volumes, pool_master,
-                pool_slave)
+                volumes, pool_main,
+                pool_subordinate)
             if len(split_brain):
                 # if such a situation exists stop and raise an exception!
                 msg = (_("A potential split brain condition has been found "

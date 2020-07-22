@@ -62,8 +62,8 @@ source_suffix = '.rst'
 #
 # source_encoding = 'utf-8-sig'
 
-# The master toctree document.
-master_doc = 'index'
+# The main toctree document.
+main_doc = 'index'
 
 # General information about the project.
 project = u'Swift Release Notes'
@@ -276,7 +276,7 @@ htmlhelp_basename = 'SwiftReleaseNotesdoc'
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 # latex_documents = [
-#     (master_doc, 'swift.tex', u'swift Documentation',
+#     (main_doc, 'swift.tex', u'swift Documentation',
 #      u'swift', 'manual'),
 # ]
 
@@ -318,7 +318,7 @@ htmlhelp_basename = 'SwiftReleaseNotesdoc'
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 # man_pages = [
-#     (master_doc, 'swift', u'swift Documentation',
+#     (main_doc, 'swift', u'swift Documentation',
 #      [author], 1)
 # ]
 
@@ -333,7 +333,7 @@ htmlhelp_basename = 'SwiftReleaseNotesdoc'
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 # texinfo_documents = [
-#     (master_doc, 'swift', u'swift Documentation',
+#     (main_doc, 'swift', u'swift Documentation',
 #      author, 'swift', 'One line description of project.',
 #      'Miscellaneous'),
 # ]

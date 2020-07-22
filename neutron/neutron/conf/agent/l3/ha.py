@@ -52,7 +52,7 @@ OPTS = [
                       'IP address(es) - requires ICMP_ECHO_REQUEST '
                       'to be enabled on the gateway. '
                       'If gateway fails, all routers will be reported '
-                      'as master, and master election will be repeated '
+                      'as main, and main election will be repeated '
                       'in round-robin fashion, until one of the router '
                       'restore the gateway connection.')),
 ]

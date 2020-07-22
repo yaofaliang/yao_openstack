@@ -3203,7 +3203,7 @@ class TestObjectReconstructor(unittest.TestCase):
         # function is that it will cause a bunch of warning log from
         # liberasurecode[1].
         # 1: https://github.com/openstack/liberasurecode/blob/
-        #    master/src/erasurecode.c#L870
+        #    main/src/erasurecode.c#L870
         expected_prefix = 'Reconstruct frag #1 with frag indexes'
         self.assertIn(expected_prefix, debug_log_lines[1])
         got_frag_index_list = json.loads(

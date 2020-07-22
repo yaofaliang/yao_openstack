@@ -311,10 +311,10 @@ def _load_encryption(proxy_conf_file, **kwargs):
         pipeline = conf.get(section, 'pipeline')
         pipeline = pipeline.replace(
             "proxy-logging proxy-server",
-            "keymaster encryption proxy-logging proxy-server")
+            "keymain encryption proxy-logging proxy-server")
         conf.set(section, 'pipeline', pipeline)
         root_secret = os.urandom(32).encode("base64")
-        conf.set('filter:keymaster', 'encryption_root_secret', root_secret)
+        conf.set('filter:keymain', 'encryption_root_secret', root_secret)
     except NoSectionError as err:
         msg = 'Error problem with proxy conf file %s: %s' % \
               (proxy_conf_file, err)

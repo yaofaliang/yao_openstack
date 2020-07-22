@@ -153,7 +153,7 @@ class L3AgentTestFramework(base.BaseSudoTestCase):
                 n, len([line for line in out.strip().split('\n') if line]))
 
         if ha:
-            common_utils.wait_until_true(lambda: router.ha_state == 'master')
+            common_utils.wait_until_true(lambda: router.ha_state == 'main')
 
         with self.assert_max_execution_time(100):
             assert_num_of_conntrack_rules(0)
@@ -250,7 +250,7 @@ class L3AgentTestFramework(base.BaseSudoTestCase):
             interface_name = router.get_external_device_name(port['id'])
             self._assert_no_ip_addresses_on_interface(router.ns_name,
                                                       interface_name)
-            common_utils.wait_until_true(lambda: router.ha_state == 'master')
+            common_utils.wait_until_true(lambda: router.ha_state == 'main')
 
             # Keepalived notifies of a state transition when it starts,
             # not when it ends. Thus, we have to wait until keepalived finishes
@@ -385,7 +385,7 @@ class L3AgentTestFramework(base.BaseSudoTestCase):
                 interface %(ha_device_name)s
                 virtual_router_id 1
                 priority 50
-                garp_master_delay 60
+                garp_main_delay 60
                 nopreempt
                 advert_int 2
                 track_interface {
@@ -561,30 +561,30 @@ class L3AgentTestFramework(base.BaseSudoTestCase):
 
         return (router1, router2)
 
-    def _get_master_and_slave_routers(self, router1, router2):
+    def _get_main_and_subordinate_routers(self, router1, router2):
 
         try:
             common_utils.wait_until_true(
-                lambda: router1.ha_state == 'master')
+                lambda: router1.ha_state == 'main')
             common_utils.wait_until_true(
                 lambda: self._check_external_device(router1))
-            master_router = router1
-            slave_router = router2
+            main_router = router1
+            subordinate_router = router2
         except common_utils.WaitTimeout:
             common_utils.wait_until_true(
-                lambda: router2.ha_state == 'master')
+                lambda: router2.ha_state == 'main')
             common_utils.wait_until_true(
                 lambda: self._check_external_device(router2))
-            master_router = router2
-            slave_router = router1
+            main_router = router2
+            subordinate_router = router1
 
         common_utils.wait_until_true(
-                lambda: master_router.ha_state == 'master')
+                lambda: main_router.ha_state == 'main')
         common_utils.wait_until_true(
-                lambda: self._check_external_device(master_router))
+                lambda: self._check_external_device(main_router))
         common_utils.wait_until_true(
-            lambda: slave_router.ha_state == 'backup')
-        return master_router, slave_router
+            lambda: subordinate_router.ha_state == 'backup')
+        return main_router, subordinate_router
 
     def fail_ha_router(self, router):
         device_name = router.get_ha_device_name()

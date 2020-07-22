@@ -830,14 +830,14 @@ Possible values:
         default='password',
         secret=True,
         help="Bind user's password for LDAP server"),
-    cfg.StrOpt('ldap_dns_soa_hostmaster',
-        default='hostmaster@example.org',
+    cfg.StrOpt('ldap_dns_soa_hostmain',
+        default='hostmain@example.org',
         help="""
-Hostmaster for LDAP DNS driver Statement of Authority
+Hostmain for LDAP DNS driver Statement of Authority
 
 Possible values:
 
-* Any valid string representing LDAP DNS hostmaster.
+* Any valid string representing LDAP DNS hostmain.
 """),
     # TODO(sfinucan): This should be converted to a ListOpt. Perhaps when the
     # option is moved to a group?
@@ -863,7 +863,7 @@ This option helps to decide where to look up the host in LDAP.
         help="""
 Refresh interval (in seconds) for LDAP DNS driver Start of Authority
 
-Time interval, a secondary/slave DNS server waits before requesting for
+Time interval, a secondary/subordinate DNS server waits before requesting for
 primary DNS server's current SOA record. If the records are different,
 secondary DNS server will request a zone transfer from primary.
 
@@ -874,7 +874,7 @@ NOTE: Lower values would cause more traffic.
         help="""
 Retry interval (in seconds) for LDAP DNS driver Start of Authority
 
-Time interval, a secondary/slave DNS server should wait, if an
+Time interval, a secondary/subordinate DNS server should wait, if an
 attempt to transfer zone failed during the previous refresh interval.
 """),
     cfg.IntOpt('ldap_dns_soa_expiry',
@@ -882,7 +882,7 @@ attempt to transfer zone failed during the previous refresh interval.
         help="""
 Expiry interval (in seconds) for LDAP DNS driver Start of Authority
 
-Time interval, a secondary/slave DNS server holds the information
+Time interval, a secondary/subordinate DNS server holds the information
 before it is no longer considered authoritative.
 """),
     cfg.IntOpt('ldap_dns_soa_minimum',

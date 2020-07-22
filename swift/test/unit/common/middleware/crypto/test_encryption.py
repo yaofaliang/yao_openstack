@@ -22,7 +22,7 @@ import uuid
 from swift.common import storage_policy, constraints
 from swift.common.middleware import copy
 from swift.common.middleware import crypto
-from swift.common.middleware.crypto import keymaster
+from swift.common.middleware.crypto import keymain
 from swift.common.middleware.crypto.crypto_utils import (
     load_crypto_meta, Crypto)
 from swift.common.ring import Ring
@@ -65,7 +65,7 @@ class TestCryptoPipelineChanges(unittest.TestCase):
         # avoid any state coupling.
         conf = {'disable_encryption': disable_encryption}
         self.encryption = crypto.filter_factory(conf)(self.proxy_app)
-        self.km = keymaster.KeyMaster(self.encryption, TEST_KEYMASTER_CONF)
+        self.km = keymain.KeyMain(self.encryption, TEST_KEYMASTER_CONF)
         self.crypto_app = self.km  # for clarity
 
     def _create_container(self, app, policy_name='one', container_path=None):
